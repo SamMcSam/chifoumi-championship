@@ -1,3 +1,5 @@
+config/production.js
+
 # Logs
 logs
 *.log

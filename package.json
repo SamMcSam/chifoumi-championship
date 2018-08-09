@@ -2,7 +2,7 @@
   "name": "chifoumichampionship",
   "version": "1.0.0",
   "description": "Online Rock Paper Scissors game",
-  "main": "server.js",
+  "main": "src/app.js",
   "dependencies": {
     "ejs": "^2.6.1",
     "ent": "^2.2.0",
