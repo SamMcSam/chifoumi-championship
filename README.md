@@ -1,10 +1,6 @@
 # chifoumi-championship
-rock, paper, scissors in Node.js + Reactjs
+✊rock, 🤚paper, ✌️scissors multiplayer game
 
-# Backend
-
-API in Node
-
-# Frontend
-
-Made in React
+🔗 Node.js
+⚛️ React.js
+🧦 Socket.io
