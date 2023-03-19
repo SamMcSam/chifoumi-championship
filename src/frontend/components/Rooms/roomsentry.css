@@ -1,0 +1,7 @@
+span.waiting {
+    background-color: greenyellow;
+}
+
+span.playing {
+    background-color: grey;
+}

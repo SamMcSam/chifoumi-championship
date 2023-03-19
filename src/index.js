@@ -8,7 +8,8 @@ import {
     Navigate,
 } from "react-router-dom";
 
-import { RoomProvider, UserProvider } from "./frontend/utils/context";
+import { UserProvider } from "./frontend/utils/context/UserContext";
+import { RoomProvider } from "./frontend/utils/context/RoomContext";
 
 import Signup from "./frontend/pages/Signup";
 import Rooms from "./frontend/pages/Rooms";

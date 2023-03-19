@@ -1,5 +1,5 @@
-import React, { useContext } from "react";
-import { UserContext } from "../../utils/context";
+import { useContext } from "react";
+import { UserContext } from "../../utils/context/UserContext";
 import { useNavigate } from "react-router";
 
 const SignupForm = () => {
@@ -11,9 +11,8 @@ const SignupForm = () => {
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
-        console.log(formData.get("name"));
         saveName(formData.get("name"));
-        navigate("/game");
+        navigate("/rooms");
     }
 
     return (
