@@ -2,8 +2,12 @@ import "./roomsentry.css";
 import { useContext } from "react";
 import { useNavigate } from "react-router";
 import { RoomContext } from "../../utils/context/RoomContext";
+import { UserContext } from "../../utils/context/UserContext";
+import io from "socket.io-client";
+const socket = io("http://localhost:5000", { path: "/server" });
 
 const RoomsEntry = ({ id, name, players, state }) => {
+    const { user } = useContext(UserContext);
     const { enterRoom } = useContext(RoomContext);
 
     const navigate = useNavigate();
@@ -13,6 +17,10 @@ const RoomsEntry = ({ id, name, players, state }) => {
         const form = e.target;
         const formData = new FormData(form);
         enterRoom(formData.get("room"));
+        socket.emit("enterRoom", {
+            roomName: formData.get("room"),
+            user: user,
+        });
         navigate("/lobby");
     }
     return (

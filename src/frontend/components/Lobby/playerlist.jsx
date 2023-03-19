@@ -1,19 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { RoomContext } from "../../utils/context/RoomContext";
+import io from "socket.io-client";
+
+const socket = io("http://localhost:5000", { path: "/server" });
 
 const PlayersList = () => {
     const [playersList, setPlayersList] = useState([]);
     const [isDataLoading, setDataLoading] = useState(false);
 
+    const { room } = useContext(RoomContext);
+
+    // useEffect(() => {
+    //     setDataLoading(true);
+    //     // @todo fetch from socket
+    //     setPlayersList([
+    //         { name: "Bob", status: true },
+    //         { name: "John", status: false },
+    //         { name: "Annette", status: true },
+    //     ]);
+    //     setDataLoading(false);
+    // }, []);
     useEffect(() => {
-        setDataLoading(true);
-        // @todo fetch from socket
-        setPlayersList([
-            { name: "Bob", status: true },
-            { name: "John", status: false },
-            { name: "Annette", status: true },
-        ]);
-        setDataLoading(false);
-    }, []);
+        // @todo
+    }, [playersList]);
 
     return (
         <div>

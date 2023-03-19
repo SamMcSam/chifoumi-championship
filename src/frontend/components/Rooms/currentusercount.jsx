@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 
+import io from "socket.io-client";
+const socket = io("http://localhost:5000", { path: "/server" });
+
 const CurrentUserCount = () => {
     const [currentCount, setCurrentCount] = useState([]);
 
     useEffect(() => {
-        // @todo get from socket
-        const count = Math.floor(Math.random() * 10);
-        setCurrentCount(count);
-    }, []);
+        socket.on("userCount", ({ nbUsers }) => {
+            setCurrentCount(nbUsers);
+        });
+    }, [currentCount]);
 
     return (
         <div>
