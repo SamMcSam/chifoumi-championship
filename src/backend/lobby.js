@@ -13,9 +13,10 @@ const createLobby = ({ name, admin }) => {
         admin: admin.name,
         users: {},
         state: "waiting",
-        results: [],
+        rounds: [],
+        winners: [],
     };
-    lobby.users[admin.name] = false;
+    lobby.users[admin.name] = "not-ready";
 
     lobbies.push(lobby);
     return { lobby };
@@ -39,7 +40,7 @@ const enterRoom = ({ lobbyName, userName }) => {
     });
 
     if (lobbyIndex !== -1) {
-        lobbies[lobbyIndex].users[userName] = false;
+        lobbies[lobbyIndex].users[userName] = "not-ready";
         return lobbies[lobbyIndex];
     }
 
@@ -67,7 +68,7 @@ const playerIsReady = ({ lobbyName, userName }) => {
     });
 
     if (lobbyIndex !== -1) {
-        return (lobbies[lobbyIndex].users[userName] = true);
+        return (lobbies[lobbyIndex].users[userName] = "ready");
     }
 
     return { error: "Can't ready player" };
@@ -77,6 +78,53 @@ const getLobby = (name) => lobbies.find((lobby) => lobby.name === name);
 
 const getLobbies = () => lobbies;
 
+const verifyLobbyWinners = (lobby) => {
+    lobby.winners = [];
+    const lastRound = lobby.rounds[lobby.rounds.length - 1];
+    let hasRock = false;
+    let rockPlayers = [];
+    let hasPaper = false;
+    let paperPlayers = [];
+    let hasScissor = false;
+    let scissorPlayers = [];
+    for (let user in lastRound) {
+        switch (lastRound[user]) {
+            case "✊":
+                hasRock = true;
+                rockPlayers.push(user);
+                break;
+            case "🤚":
+                hasPaper = true;
+                paperPlayers.push(user);
+                break;
+            default:
+                hasScissor = true;
+                scissorPlayers.push(user);
+                break;
+        }
+    }
+    if (
+        (hasPaper && hasRock && hasScissor) ||
+        (hasPaper && !hasRock && !hasScissor) ||
+        (!hasPaper && hasRock && !hasScissor) ||
+        (!hasPaper && !hasRock && hasScissor) ||
+        (!hasPaper && !hasRock && !hasScissor) // what to do with this case?
+    ) {
+        console.log("No winner this round! [" + lobby.name + "]");
+    } else {
+        if (hasPaper && hasRock && !hasScissor) {
+            lobby.winners = paperPlayers;
+            console.log("🤚 wins! [" + lobby.name + "]");
+        } else if (hasPaper && !hasRock && hasScissor) {
+            lobby.winners = scissorPlayers;
+            console.log("✌️ wins! [" + lobby.name + "]");
+        } else if (!hasPaper && hasRock && hasScissor) {
+            lobby.winners = rockPlayers;
+            console.log("✊ wins! [" + lobby.name + "]");
+        }
+    }
+};
+
 module.exports = {
     createLobby,
     deleteLobby,
@@ -85,4 +133,5 @@ module.exports = {
     playerIsReady,
     getLobby,
     getLobbies,
+    verifyLobbyWinners,
 };

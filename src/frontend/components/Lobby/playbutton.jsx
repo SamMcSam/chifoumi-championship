@@ -1,7 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { RoomContext } from "../../utils/context/RoomContext";
 import { UserContext } from "../../utils/context/UserContext";
-import { useNavigate } from "react-router";
 
 import io from "socket.io-client";
 
@@ -10,14 +9,16 @@ const socket = io("http://localhost:5000", { path: "/server" });
 const PlayButton = () => {
     const [canPlay, setCanPlay] = useState(false);
     const [isAdmin, setAdmin] = useState(false);
+    const [message, setMessage] = useState("Waiting for more players...");
 
     const { user } = useContext(UserContext);
     const { room } = useContext(RoomContext);
 
-    const navigate = useNavigate();
-
     const handleClick = (e) => {
-        navigate("/lobby");
+        socket.emit("newRound", {
+            roomName: room,
+        });
+        setCanPlay(false);
     };
 
     useEffect(() => {
@@ -33,15 +34,33 @@ const PlayButton = () => {
         socket.on("listRooms", ({ rooms }) => {
             rooms.forEach((element) => {
                 if (element.name === room) {
-                    let okayToGo = true;
+                    let playersToWait = 0;
+                    let playersReady = 0;
                     Object.keys(element.users).forEach((key) => {
-                        if (!element.users[key]) {
-                            okayToGo = false;
+                        if (
+                            element.users[key] == "ready" ||
+                            element.users[key] == "not-ready"
+                        ) {
+                            playersToWait++;
+                            if (element.users[key] == "ready") {
+                                playersReady++;
+                            }
                         }
                     });
                     setCanPlay(
-                        okayToGo && Object.keys(element.users).length > 1
+                        playersToWait === playersReady && playersToWait > 1
                     );
+
+                    // message
+                    if (playersToWait === playersReady) {
+                        setMessage(
+                            playersReady && playersToWait > 1
+                                ? "Waiting for admin to launch the game..."
+                                : "Waiting for players to get ready..."
+                        );
+                    } else {
+                        setMessage("Waiting for more players...");
+                    }
                 }
             });
         });
@@ -49,6 +68,7 @@ const PlayButton = () => {
 
     return (
         <div>
+            <h3>{message}</h3>
             {isAdmin ? (
                 <button disabled={!canPlay} onClick={handleClick}>
                     ✊🤚✌️ Launch the game!

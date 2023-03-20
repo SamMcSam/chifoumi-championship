@@ -48,7 +48,13 @@ const PlayersList = () => {
                         {playersList.map((player, index) => (
                             <tr>
                                 <td>{player.name}</td>
-                                <td>{player.status ? "✅" : "❌"}</td>
+                                <td>
+                                    {player.status === "ready"
+                                        ? "✅"
+                                        : player.status === "not-ready"
+                                        ? "❌"
+                                        : "💀"}
+                                </td>
                             </tr>
                         ))}
                     </tbody>

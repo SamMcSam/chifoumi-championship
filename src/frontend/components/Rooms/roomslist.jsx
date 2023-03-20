@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { ROOMSTATE } from "./../../utils/enums/RoomState";
 import RoomsEntry from "./roomsentry";
 import io from "socket.io-client";
 import "./roomslist.css";

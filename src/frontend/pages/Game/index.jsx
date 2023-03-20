@@ -1,13 +1,18 @@
-import { useState, useContext } from "react";
-import { UserContext } from "../../utils/context/UserContext";
+import { useState, useContext, useEffect } from "react";
 import { RoomContext } from "../../utils/context/RoomContext";
 import { useUserVerification } from "../../utils/hooks/useUserVerification";
 import { useLobbyVerification } from "../../utils/hooks/useLobbyVerification";
 import NextMove from "../../components/Game/nextmove";
 import ResultMove from "../../components/Game/resultmove";
+import PlayerStatus from "../../components/Lobby/playerstatus";
+import PlayersList from "../../components/Lobby/playerlist";
+import PlayButton from "../../components/Lobby/playbutton";
+
+import io from "socket.io-client";
+
+const socket = io("http://localhost:5000", { path: "/server" });
 
 function Game() {
-    const { user } = useContext(UserContext);
     const { room } = useContext(RoomContext);
 
     const [isResult, setResult] = useState(false);
@@ -15,18 +20,29 @@ function Game() {
     useUserVerification();
     useLobbyVerification();
 
-    // @todo get current state from socket
+    useEffect(() => {
+        socket.on("listRooms", ({ rooms }) => {
+            rooms.forEach((element) => {
+                if (element.name === room && element.state !== "waiting") {
+                    setResult(element.state === "results");
+                }
+            });
+        });
+    }, []);
 
     return (
         <div>
             <h1>Let's Chifoumi!</h1>
-            {isResult ? <ResultMove /> : <NextMove />}
 
-            {/* Remove this with socket */}
-            <div>
-                <button onClick={() => setResult(!isResult)}>
-                    DEBUG : next
-                </button>
+            <div style={{ display: !isResult ? "block" : "none" }}>
+                <NextMove />
+            </div>
+
+            <div style={{ display: isResult ? "block" : "none" }}>
+                <ResultMove />
+                <PlayersList></PlayersList>
+                <PlayerStatus></PlayerStatus>
+                <PlayButton></PlayButton>
             </div>
         </div>
     );

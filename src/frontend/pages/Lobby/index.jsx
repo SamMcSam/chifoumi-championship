@@ -1,10 +1,9 @@
 import { useUserVerification } from "../../utils/hooks/useUserVerification";
 import { useLobbyVerification } from "../../utils/hooks/useLobbyVerification";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { UserContext } from "../../utils/context/UserContext";
 import { RoomContext } from "../../utils/context/RoomContext";
 import PlayerStatus from "../../components/Lobby/playerstatus";
-import GameStatus from "../../components/Lobby/gamestatus";
 import PlayersList from "../../components/Lobby/playerlist";
 import PlayButton from "../../components/Lobby/playbutton";
 import { useNavigate } from "react-router-dom";
@@ -25,13 +24,22 @@ function Lobby() {
         navigate("/rooms");
     };
 
+    useEffect(() => {
+        socket.on("listRooms", ({ rooms }) => {
+            rooms.forEach((element) => {
+                if (element.name === room && element.state !== "waiting") {
+                    navigate("/game");
+                }
+            });
+        });
+    }, []);
+
     return (
         <div>
             <h1>Lobby</h1>
             <h2>
                 Welcome to room '{room}'. Playing as '{user}'
             </h2>
-            <GameStatus></GameStatus>
             <PlayersList></PlayersList>
             <PlayerStatus></PlayerStatus>
             <PlayButton></PlayButton>

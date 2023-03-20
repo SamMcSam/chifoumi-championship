@@ -31,7 +31,7 @@ const RoomsEntry = ({ id, name, players, state }) => {
                 {state == "waiting" ? (
                     <span className="waiting">Waiting</span>
                 ) : (
-                    <span className="playing">Playing...</span>
+                    <span className="playing">Playing</span>
                 )}
             </td>
             <td>

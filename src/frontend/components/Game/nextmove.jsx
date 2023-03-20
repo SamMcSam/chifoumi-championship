@@ -1,18 +1,34 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { CHIFOUMI } from "./../../utils/enums/Chifoumi";
+import Countdown from "./countdown";
+import { RoomContext } from "../../utils/context/RoomContext";
+import { UserContext } from "../../utils/context/UserContext";
 
 import "./nextmove.css";
+
+import io from "socket.io-client";
+
+const socket = io("http://localhost:5000", { path: "/server" });
 
 function NextMove() {
     const [nextMove, setNextMove] = useState(null);
 
+    const { user } = useContext(UserContext);
+    const { room } = useContext(RoomContext);
+
     const doMove = (move) => {
         setNextMove(move);
+        socket.emit("makeMove", {
+            userName: user,
+            roomName: room,
+            move: move,
+        });
     };
 
     return (
         <div>
             <h2>Your move...</h2>
+            <Countdown></Countdown>
             {nextMove != null ? (
                 <div>
                     <button
