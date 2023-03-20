@@ -35,6 +35,7 @@ const {
     playerIsReady,
     getLobby,
     getLobbies,
+    verifyLobbyWinners,
 } = require("./lobby");
 
 const sendReload = (socket, alsoCount = true) => {
@@ -167,9 +168,51 @@ io.on("connection", (socket) => {
     });
 
     // start game
-    // send move
-    // send results
+    socket.on("newRound", ({ roomName }) => {
+        const lobby = getLobby(roomName);
+        if (lobby) {
+            lobby.state = "playing";
+            lobby.rounds.push({});
+            console.log(`⭐ a new round started in ${roomName} room`);
 
+            socket.broadcast.emit("listRooms", {
+                rooms: getLobbies(),
+            });
+
+            // Countdown until next round
+            setTimeout(() => {
+                lobby.state = "results";
+
+                // verify who won?
+                verifyLobbyWinners(lobby);
+
+                // is it the last round?
+                if (lobby.winners.length == 1) {
+                    const lastRound = {};
+                    lastRound[lobby.winners[0]] = true;
+                    lobby.rounds.push(lastRound);
+                }
+
+                socket.broadcast.emit("listRooms", {
+                    rooms: getLobbies(),
+                });
+                console.log(
+                    `✉️ results for the latest round in ${roomName} room are in!`
+                );
+            }, 5000);
+        }
+    });
+
+    // move
+    socket.on("makeMove", ({ roomName, userName, move }) => {
+        const lobby = getLobby(roomName);
+        if (lobby) {
+            lobby.rounds[lobby.rounds.length - 1][userName] = move;
+            console.log(`${userName} launched a ${move} [${roomName} room]`);
+        }
+    });
+
+    // disconnect
     socket.on("disconnect", function () {
         console.log("disconnect");
         if (socket.user) {

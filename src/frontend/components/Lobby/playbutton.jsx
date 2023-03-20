@@ -39,7 +39,9 @@ const PlayButton = () => {
                             okayToGo = false;
                         }
                     });
-                    setCanPlay(okayToGo);
+                    setCanPlay(
+                        okayToGo && Object.keys(element.users).length > 1
+                    );
                 }
             });
         });
