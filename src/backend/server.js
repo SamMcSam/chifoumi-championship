@@ -37,6 +37,20 @@ const {
     getLobbies,
 } = require("./lobby");
 
+const sendReload = (socket, alsoCount = true) => {
+    setTimeout(() => {
+        socket.broadcast.emit("listRooms", {
+            rooms: getLobbies(),
+        });
+
+        if (alsoCount) {
+            socket.broadcast.emit("userCount", {
+                nbUsers: countUsers(),
+            });
+        }
+    }, 200);
+};
+
 io.on("connection", (socket) => {
     // new user
     socket.on("newUser", ({ name }) => {
@@ -55,19 +69,11 @@ io.on("connection", (socket) => {
         socket.emit("confirmAction", {});
 
         // wait a bit
-        setTimeout(() => {
-            socket.broadcast.emit("listRooms", {
-                rooms: getLobbies(),
-            });
-
-            socket.broadcast.emit("userCount", {
-                nbUsers: countUsers(),
-            });
-        }, 200);
+        sendReload(socket);
     });
 
     // create room
-    socket.on("createRoom", ({ roomName, userName }, callback) => {
+    socket.on("createRoom", ({ roomName, userName }) => {
         const user = getUserByName(userName);
 
         const { error, lobby } = createLobby({
@@ -92,15 +98,11 @@ io.on("connection", (socket) => {
         socket.emit("confirmAction", {});
 
         // wait a bit
-        setTimeout(() => {
-            socket.broadcast.emit("listRooms", {
-                rooms: getLobbies(),
-            });
-        }, 200);
+        sendReload(socket, false);
     });
 
     // enter room
-    socket.on("enterRoom", ({ roomName, userName }, callback) => {
+    socket.on("enterRoom", ({ roomName, userName }) => {
         const user = getUserByName(userName);
 
         const { error, lobby } = enterRoom({
@@ -110,11 +112,10 @@ io.on("connection", (socket) => {
 
         if (error) {
             console.error(error);
-            if (typeof callback === "function") {
-                return callback(error);
-            } else {
-                return;
-            }
+            socket.emit("error", {
+                message: error,
+            });
+            return;
         }
 
         user.room = roomName;
@@ -124,15 +125,11 @@ io.on("connection", (socket) => {
         socket.emit("confirmAction", {});
 
         // wait a bit
-        setTimeout(() => {
-            socket.broadcast.emit("listRooms", {
-                rooms: getLobbies(),
-            });
-        }, 200);
+        sendReload(socket, false);
     });
 
     // ready in lobby
-    socket.on("readyInLobby", ({ roomName, userName }, callback) => {
+    socket.on("readyInLobby", ({ roomName, userName }) => {
         const { error } = playerIsReady({
             lobbyName: roomName,
             userName: userName,
@@ -140,19 +137,35 @@ io.on("connection", (socket) => {
 
         if (error) {
             console.error(error);
-            if (typeof callback === "function") {
-                return callback(error);
-            } else {
-                return;
-            }
+            socket.emit("error", {
+                message: error,
+            });
+            return;
         }
 
+        // @todo update only this room, not all broadcast
         socket.broadcast.emit("listRooms", {
             rooms: getLobbies(),
         });
     });
 
     // quit lobby
+    socket.on("quitLobby", ({ roomName, userName }) => {
+        const lobby = removeUserFromLobby({
+            userName: userName,
+            lobbyName: roomName,
+        });
+        if (lobby) {
+            if (Object.keys(lobby.users).length < 1) {
+                deleteLobby(lobby.name);
+            } else if (lobby.admin == userName) {
+                lobby.admin = Object.keys(lobby.users)[0];
+            }
+
+            sendReload(socket);
+        }
+    });
+
     // start game
     // send move
     // send results
@@ -175,6 +188,8 @@ io.on("connection", (socket) => {
                         console.log(lobby);
                         if (Object.keys(lobby.users).length < 1) {
                             deleteLobby(lobby.name);
+                        } else if (lobby.admin == user.name) {
+                            lobby.admin = Object.keys(lobby.users)[0];
                         }
                         socket.broadcast.emit("listRooms", {
                             rooms: getLobbies(),
