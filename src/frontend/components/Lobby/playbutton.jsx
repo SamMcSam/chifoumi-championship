@@ -52,9 +52,9 @@ const PlayButton = () => {
                     );
 
                     // message
-                    if (playersToWait === playersReady) {
+                    if (playersToWait > 1) {
                         setMessage(
-                            playersReady && playersToWait > 1
+                            playersToWait === playersReady
                                 ? "Waiting for admin to launch the game..."
                                 : "Waiting for players to get ready..."
                         );

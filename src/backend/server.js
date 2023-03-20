@@ -152,7 +152,7 @@ io.on("connection", (socket) => {
 
     // quit lobby
     socket.on("quitLobby", ({ roomName, userName }) => {
-        const lobby = removeUserFromLobby({
+        const { lobby } = removeUserFromLobby({
             userName: userName,
             lobbyName: roomName,
         });
@@ -175,9 +175,11 @@ io.on("connection", (socket) => {
             lobby.rounds.push({});
             console.log(`⭐ a new round started in ${roomName} room`);
 
-            socket.broadcast.emit("listRooms", {
-                rooms: getLobbies(),
-            });
+            setTimeout(() => {
+                socket.broadcast.emit("listRooms", {
+                    rooms: getLobbies(),
+                });
+            }, 200);
 
             // Countdown until next round
             setTimeout(() => {
@@ -191,6 +193,7 @@ io.on("connection", (socket) => {
                     const lastRound = {};
                     lastRound[lobby.winners[0]] = true;
                     lobby.rounds.push(lastRound);
+                    lobby.state = "done";
                 }
 
                 socket.broadcast.emit("listRooms", {
@@ -199,7 +202,7 @@ io.on("connection", (socket) => {
                 console.log(
                     `✉️ results for the latest round in ${roomName} room are in!`
                 );
-            }, 5000);
+            }, 5200);
         }
     });
 
@@ -223,7 +226,7 @@ io.on("connection", (socket) => {
                     nbUsers: countUsers(),
                 });
                 if (typeof user.room === "string" && user.room !== "") {
-                    const lobby = removeUserFromLobby({
+                    const { lobby } = removeUserFromLobby({
                         userName: user.name,
                         lobbyName: user.room,
                     });

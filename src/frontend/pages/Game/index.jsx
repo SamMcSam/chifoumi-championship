@@ -15,7 +15,7 @@ const socket = io("http://localhost:5000", { path: "/server" });
 function Game() {
     const { room } = useContext(RoomContext);
 
-    const [isResult, setResult] = useState(false);
+    const [pageStatus, setPageStatus] = useState("playing");
 
     useUserVerification();
     useLobbyVerification();
@@ -23,8 +23,9 @@ function Game() {
     useEffect(() => {
         socket.on("listRooms", ({ rooms }) => {
             rooms.forEach((element) => {
-                if (element.name === room && element.state !== "waiting") {
-                    setResult(element.state === "results");
+                if (element.name === room) {
+                    setPageStatus(element.state);
+                    console.log(element.state);
                 }
             });
         });
@@ -34,12 +35,25 @@ function Game() {
         <div>
             <h1>Let's Chifoumi!</h1>
 
-            <div style={{ display: !isResult ? "block" : "none" }}>
+            <div
+                style={{ display: pageStatus === "playing" ? "block" : "none" }}
+            >
                 <NextMove />
             </div>
 
-            <div style={{ display: isResult ? "block" : "none" }}>
+            <div
+                style={{
+                    display:
+                        pageStatus === "results" || pageStatus === "done"
+                            ? "block"
+                            : "none",
+                }}
+            >
                 <ResultMove />
+            </div>
+            <div
+                style={{ display: pageStatus === "results" ? "block" : "none" }}
+            >
                 <PlayersList></PlayersList>
                 <PlayerStatus></PlayerStatus>
                 <PlayButton></PlayButton>

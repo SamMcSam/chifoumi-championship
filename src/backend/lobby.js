@@ -55,7 +55,7 @@ const removeUserFromLobby = ({ userName, lobbyName }) => {
     if (lobbyIndex !== -1) {
         if (lobbies[lobbyIndex].users.hasOwnProperty(userName)) {
             delete lobbies[lobbyIndex].users[userName];
-            return lobbies[lobbyIndex];
+            return { lobby: lobbies[lobbyIndex] };
         }
     }
 
