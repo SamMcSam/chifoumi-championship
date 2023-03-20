@@ -15,7 +15,7 @@ const CurrentUserCount = () => {
     return (
         <div>
             <span>Current connected users :&nbsp;</span>
-            <span>{currentCount}</span>
+            <span>{currentCount.toString()}</span>
         </div>
     );
 };

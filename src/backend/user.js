@@ -16,7 +16,7 @@ const addUser = ({ id, name }) => {
     return { user };
 };
 
-const removeUser = ({ id }) => {
+const removeUser = (id) => {
     const index = users.findIndex((user) => {
         return user.id === id;
     });
@@ -25,11 +25,11 @@ const removeUser = ({ id }) => {
         return users.splice(index, 1)[0];
     }
 
-    return { error: "Can't renove user" };
+    return { error: "Can't remove user" };
 };
 
-const getUser = ({ id }) => users.find((user) => user.id === id);
-const getUserByName = ({ name }) => users.find((user) => user.name === name);
+const getUser = (id) => users.find((user) => user.id === id);
+const getUserByName = (name) => users.find((user) => user.name === name);
 
 const countUsers = () => users.length;
 

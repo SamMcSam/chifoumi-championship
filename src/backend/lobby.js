@@ -1,27 +1,27 @@
 const lobbies = [];
 
 const createLobby = ({ name, admin }) => {
-    //name = name.trim().toLowerCase();
-
     const existingLobby = lobbies.find((lobby) => {
         return lobby.name === name;
     });
 
     if (existingLobby) {
-        return { error: "Lobby already exists" };
+        return { error: "Room already exists" };
     }
     const lobby = {
         name: name,
-        admin: admin,
-        users: [admin],
+        admin: admin.name,
+        users: {},
         state: "waiting",
+        results: [],
     };
+    lobby.users[admin.name] = false;
 
     lobbies.push(lobby);
     return { lobby };
 };
 
-const deleteLobby = ({ lobbyName }) => {
+const deleteLobby = (lobbyName) => {
     const index = lobbies.findIndex((lobby) => {
         return lobby.name === lobbyName;
     });
@@ -34,43 +34,36 @@ const deleteLobby = ({ lobbyName }) => {
 };
 
 const enterRoom = ({ lobbyName, userName }) => {
-    console.log(lobbyName);
-    console.log(lobbies);
     const lobbyIndex = lobbies.findIndex((lobby) => {
         return lobby.name === lobbyName;
     });
 
-    console.log(lobbyIndex);
-
     if (lobbyIndex !== -1) {
-        console.log(lobbies[lobbyIndex]);
-        lobbies[lobbyIndex].users.push(userName); // @todo test if user is there already
-        console.log(lobbies[lobbyIndex].users);
+        lobbies[lobbyIndex].users[userName] = false;
         return lobbies[lobbyIndex];
     }
 
     return { error: "Can't enter room" };
 };
 
-const removeUserFromLobby = ({ userId, lobbyName }) => {
-    const lobbyIndex = lobbyName.findIndex((lobby) => {
+const removeUserFromLobby = ({ userName, lobbyName }) => {
+    const lobbyIndex = lobbies.findIndex((lobby) => {
         return lobby.name === lobbyName;
     });
 
     if (lobbyIndex !== -1) {
-        const userIndex = lobbies[lobbyIndex].users.findIndex((user) => {
-            return user.id === userId;
-        });
-
-        if (userIndex !== -1) {
-            return lobbies[lobbyIndex].users.splice(userIndex, 1)[0];
+        console.log(lobbies[lobbyIndex].userName);
+        console.log(lobbies[lobbyIndex].users);
+        if (lobbies[lobbyIndex].users.hasOwnProperty(userName)) {
+            delete lobbies[lobbyIndex].users[userName];
+            return lobbies[lobbyIndex];
         }
     }
 
     return { error: "Can't remove user from room" };
 };
 
-const getLobby = ({ name }) => lobbies.find((lobby) => lobby.name === name);
+const getLobby = (name) => lobbies.find((lobby) => lobby.name === name);
 
 const getLobbies = () => lobbies;
 

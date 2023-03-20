@@ -8,10 +8,11 @@ const socket = io("http://localhost:5000", { path: "/server" });
 
 const RoomsList = () => {
     const [roomList, setRoomList] = useState([]);
-    const [isDataLoading, setDataLoading] = useState(false);
+    const [isDataLoading, setDataLoading] = useState(true);
 
     useEffect(() => {
         socket.on("listRooms", ({ rooms }) => {
+            setDataLoading(false);
             setRoomList(rooms);
         });
     }, [roomList]);
@@ -30,17 +31,17 @@ const RoomsList = () => {
                             <td>State</td>
                             <td></td>
                         </tr>
-                        {typeof roomList === "object" ? (
+                        {typeof roomList === "object" && roomList.length > 0 ? (
                             roomList.map((room, index) => (
                                 <RoomsEntry
                                     key={room.name}
                                     name={room.name}
-                                    players={room.users}
+                                    players={Object.keys(room.users)}
                                     state={room.state}
                                 />
                             ))
                         ) : (
-                            <></>
+                            <tr>No rooms yet</tr>
                         )}
                     </tbody>
                 </table>

@@ -19,7 +19,7 @@ const RoomsEntry = ({ id, name, players, state }) => {
         enterRoom(formData.get("room"));
         socket.emit("enterRoom", {
             roomName: formData.get("room"),
-            user: user,
+            userName: user,
         });
         navigate("/lobby");
     }
@@ -37,7 +37,9 @@ const RoomsEntry = ({ id, name, players, state }) => {
             <td>
                 <form onSubmit={handleSubmit}>
                     <input name="room" type="hidden" value={name} />
-                    <button type="submit">Enter</button>
+                    <button type="submit" disabled={state != "waiting"}>
+                        🚪Enter
+                    </button>
                 </form>
             </td>
         </tr>

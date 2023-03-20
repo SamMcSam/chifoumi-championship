@@ -11,6 +11,7 @@ server.listen(PORT, () => {
 
 const socketIO = require("socket.io");
 const io = socketIO(server, {
+    reconnection: false,
     path: "/server",
     cookie: true,
     cors: {
@@ -37,35 +38,37 @@ const {
 
 io.on("connection", (socket) => {
     // new user
-    socket.on("newUser", ({ name }, callback) => {
+    socket.on("newUser", ({ name }) => {
         const { error, user } = addUser({ id: socket.id, name });
-
         if (error) {
             console.error(error);
-            if (typeof callback === "function") {
-                return callback(error);
-            } else {
-                return;
-            }
+            socket.emit("error", {
+                message: error,
+            });
+            return;
         }
 
         console.log("New user", user);
+        socket.user = user;
 
-        socket.broadcast.emit("userCount", {
-            nbUsers: countUsers(),
-        });
+        socket.emit("confirmAction", {});
 
-        socket.broadcast.emit("listRooms", {
-            rooms: getLobbies(),
-        });
+        // wait a bit
+        setTimeout(() => {
+            socket.broadcast.emit("listRooms", {
+                rooms: getLobbies(),
+            });
 
-        if (typeof callback === "function") {
-            callback();
-        }
+            socket.broadcast.emit("userCount", {
+                nbUsers: countUsers(),
+            });
+        }, 200);
     });
 
     // create room
-    socket.on("createRoom", ({ roomName, user }, callback) => {
+    socket.on("createRoom", ({ roomName, userName }, callback) => {
+        const user = getUserByName(userName);
+
         const { error, lobby } = createLobby({
             name: roomName,
             admin: user,
@@ -73,30 +76,35 @@ io.on("connection", (socket) => {
 
         if (error) {
             console.error(error);
-            if (typeof callback === "function") {
-                return callback(error);
-            } else {
-                return;
-            }
+            socket.emit("error", {
+                message: error,
+            });
+            return;
         }
 
         console.log("New room", roomName);
-        console.log("User joined a room", user, roomName);
 
-        socket.broadcast.emit("listRooms", {
-            rooms: getLobbies(),
-        });
+        user.room = roomName;
+        socket.user = user;
+        console.log("User joined a room", user);
 
-        if (typeof callback === "function") {
-            callback();
-        }
+        socket.emit("confirmAction", {});
+
+        // wait a bit
+        setTimeout(() => {
+            socket.broadcast.emit("listRooms", {
+                rooms: getLobbies(),
+            });
+        }, 200);
     });
 
     // enter room
-    socket.on("enterRoom", ({ roomName, user }, callback) => {
+    socket.on("enterRoom", ({ roomName, userName }, callback) => {
+        const user = getUserByName(userName);
+
         const { error, lobby } = enterRoom({
             lobbyName: roomName,
-            userName: user,
+            userName: userName,
         });
 
         if (error) {
@@ -108,15 +116,18 @@ io.on("connection", (socket) => {
             }
         }
 
-        console.log("User joined a room", user, roomName);
+        user.room = roomName;
+        socket.user = user;
+        console.log("User joined a room", user);
 
-        socket.broadcast.emit("listRooms", {
-            rooms: getLobbies(),
-        });
+        socket.emit("confirmAction", {});
 
-        if (typeof callback === "function") {
-            callback();
-        }
+        // wait a bit
+        setTimeout(() => {
+            socket.broadcast.emit("listRooms", {
+                rooms: getLobbies(),
+            });
+        }, 200);
     });
 
     // ready in lobby
@@ -125,19 +136,31 @@ io.on("connection", (socket) => {
     // send move
     // send results
 
-    // console.log("a user connected");
-    // socket.on("disconnect", () => {
-    //     console.log("user disconnected");
-    // });
-
     socket.on("disconnect", function () {
-        const user = removeUser(socket.id);
-        if (user) {
-            console.log("User disconnected", user.name);
-            // @todo test if was in a lobby
-            socket.broadcast.emit("userCount", {
-                nbUsers: countUsers(),
-            });
+        console.log("disconnect");
+        if (socket.user) {
+            console.log("User disconnected", socket.user);
+            const user = removeUser(socket.user.id);
+            if (user) {
+                socket.broadcast.emit("userCount", {
+                    nbUsers: countUsers(),
+                });
+                if (typeof user.room === "string" && user.room !== "") {
+                    const lobby = removeUserFromLobby({
+                        userName: user.name,
+                        lobbyName: user.room,
+                    });
+                    if (lobby) {
+                        console.log(lobby);
+                        if (Object.keys(lobby.users).length < 1) {
+                            deleteLobby(lobby.name);
+                        }
+                        socket.broadcast.emit("listRooms", {
+                            rooms: getLobbies(),
+                        });
+                    }
+                }
+            }
         }
     });
 });
