@@ -32,6 +32,7 @@ const {
     deleteLobby,
     enterRoom,
     removeUserFromLobby,
+    playerIsReady,
     getLobby,
     getLobbies,
 } = require("./lobby");
@@ -131,6 +132,26 @@ io.on("connection", (socket) => {
     });
 
     // ready in lobby
+    socket.on("readyInLobby", ({ roomName, userName }, callback) => {
+        const { error } = playerIsReady({
+            lobbyName: roomName,
+            userName: userName,
+        });
+
+        if (error) {
+            console.error(error);
+            if (typeof callback === "function") {
+                return callback(error);
+            } else {
+                return;
+            }
+        }
+
+        socket.broadcast.emit("listRooms", {
+            rooms: getLobbies(),
+        });
+    });
+
     // quit lobby
     // start game
     // send move

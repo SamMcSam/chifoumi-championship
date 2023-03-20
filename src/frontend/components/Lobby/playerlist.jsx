@@ -21,12 +21,21 @@ const PlayersList = () => {
     //     setDataLoading(false);
     // }, []);
     useEffect(() => {
-        // @todo
+        socket.on("listRooms", ({ rooms }) => {
+            rooms.forEach((element) => {
+                if (element.name == room) {
+                    setPlayersList(
+                        Object.keys(element.users).map((key) => {
+                            return { name: key, status: element.users[key] };
+                        })
+                    );
+                }
+            });
+        });
     }, [playersList]);
 
     return (
         <div>
-            <h3>Players:</h3>
             {isDataLoading ? (
                 <div>Loading ↻</div>
             ) : (
@@ -34,7 +43,7 @@ const PlayersList = () => {
                     <tbody>
                         <tr>
                             <td>Player</td>
-                            <td>Ready to play?</td>
+                            <td>Ready?</td>
                         </tr>
                         {playersList.map((player, index) => (
                             <tr>

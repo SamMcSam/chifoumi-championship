@@ -52,8 +52,6 @@ const removeUserFromLobby = ({ userName, lobbyName }) => {
     });
 
     if (lobbyIndex !== -1) {
-        console.log(lobbies[lobbyIndex].userName);
-        console.log(lobbies[lobbyIndex].users);
         if (lobbies[lobbyIndex].users.hasOwnProperty(userName)) {
             delete lobbies[lobbyIndex].users[userName];
             return lobbies[lobbyIndex];
@@ -61,6 +59,18 @@ const removeUserFromLobby = ({ userName, lobbyName }) => {
     }
 
     return { error: "Can't remove user from room" };
+};
+
+const playerIsReady = ({ lobbyName, userName }) => {
+    const lobbyIndex = lobbies.findIndex((lobby) => {
+        return lobby.name === lobbyName;
+    });
+
+    if (lobbyIndex !== -1) {
+        return (lobbies[lobbyIndex].users[userName] = true);
+    }
+
+    return { error: "Can't ready player" };
 };
 
 const getLobby = (name) => lobbies.find((lobby) => lobby.name === name);
@@ -72,6 +82,7 @@ module.exports = {
     deleteLobby,
     enterRoom,
     removeUserFromLobby,
+    playerIsReady,
     getLobby,
     getLobbies,
 };
