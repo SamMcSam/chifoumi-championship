@@ -15,52 +15,54 @@ const PlayButton = () => {
     const { room } = useContext(RoomContext);
 
     const handleClick = (e) => {
+        e.preventDefault();
         socket.emit("newRound", {
             roomName: room,
         });
-        setCanPlay(false);
+    };
+
+    const updateLobbyState = (lobby) => {
+        setAdmin(lobby.admin === user); // update admin
+
+        let playersToWait = 0;
+        let playersReady = 0;
+        Object.keys(lobby.users).forEach((key) => {
+            if (
+                lobby.users[key] == "ready" ||
+                lobby.users[key] == "not-ready"
+            ) {
+                playersToWait++;
+                if (lobby.users[key] == "ready") {
+                    playersReady++;
+                }
+            }
+        });
+        setCanPlay(playersToWait === playersReady && playersToWait > 1);
+
+        // message
+        if (playersToWait > 1) {
+            setMessage(
+                playersToWait === playersReady
+                    ? "Waiting for admin to launch the game..."
+                    : "Waiting for players to get ready..."
+            );
+        } else {
+            setMessage("Waiting for more players...");
+        }
     };
 
     useEffect(() => {
-        socket.on("listRooms", ({ rooms }) => {
-            rooms.forEach((element) => {
-                if (element.name === room) {
-                    setAdmin(element.admin === user);
-                }
-            });
+        socket.emit("getLobby", { roomName: room }, (response) => {
+            if (response.lobby) {
+                updateLobbyState(response.lobby);
+            }
         });
     }, []);
     useEffect(() => {
         socket.on("listRooms", ({ rooms }) => {
             rooms.forEach((element) => {
                 if (element.name === room) {
-                    let playersToWait = 0;
-                    let playersReady = 0;
-                    Object.keys(element.users).forEach((key) => {
-                        if (
-                            element.users[key] == "ready" ||
-                            element.users[key] == "not-ready"
-                        ) {
-                            playersToWait++;
-                            if (element.users[key] == "ready") {
-                                playersReady++;
-                            }
-                        }
-                    });
-                    setCanPlay(
-                        playersToWait === playersReady && playersToWait > 1
-                    );
-
-                    // message
-                    if (playersToWait > 1) {
-                        setMessage(
-                            playersToWait === playersReady
-                                ? "Waiting for admin to launch the game..."
-                                : "Waiting for players to get ready..."
-                        );
-                    } else {
-                        setMessage("Waiting for more players...");
-                    }
+                    updateLobbyState(element);
                 }
             });
         });

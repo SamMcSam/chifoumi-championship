@@ -6,29 +6,39 @@ const socket = io("http://localhost:5000", { path: "/server" });
 
 const PlayersList = () => {
     const [playersList, setPlayersList] = useState([]);
-    const [isDataLoading, setDataLoading] = useState(false);
+    const [isDataLoading, setDataLoading] = useState(true);
 
     const { room } = useContext(RoomContext);
 
-    // useEffect(() => {
-    //     setDataLoading(true);
-    //     // @todo fetch from socket
-    //     setPlayersList([
-    //         { name: "Bob", status: true },
-    //         { name: "John", status: false },
-    //         { name: "Annette", status: true },
-    //     ]);
-    //     setDataLoading(false);
-    // }, []);
+    /*
+    [
+        { name: "Bob", status: true },
+        { name: "John", status: false },
+        { name: "Annette", status: true },
+    ]
+    */
+    const updatePlayerList = (lobby) => {
+        setPlayersList(
+            Object.keys(lobby.users).map((key) => {
+                return { name: key, status: lobby.users[key] };
+            })
+        );
+    };
+    useEffect(() => {
+        setDataLoading(true);
+        socket.emit("getLobby", { roomName: room }, (response) => {
+            if (response.lobby) {
+                setDataLoading(false);
+                updatePlayerList(response.lobby);
+            }
+        });
+    }, []);
     useEffect(() => {
         socket.on("listRooms", ({ rooms }) => {
             rooms.forEach((element) => {
                 if (element.name == room) {
-                    setPlayersList(
-                        Object.keys(element.users).map((key) => {
-                            return { name: key, status: element.users[key] };
-                        })
-                    );
+                    setDataLoading(false);
+                    updatePlayerList(element);
                 }
             });
         });
@@ -46,7 +56,7 @@ const PlayersList = () => {
                             <td>Ready?</td>
                         </tr>
                         {playersList.map((player, index) => (
-                            <tr>
+                            <tr key={player.name}>
                                 <td>{player.name}</td>
                                 <td>
                                     {player.status === "ready"

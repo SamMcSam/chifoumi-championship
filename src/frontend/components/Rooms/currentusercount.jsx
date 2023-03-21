@@ -7,6 +7,11 @@ const CurrentUserCount = () => {
     const [currentCount, setCurrentCount] = useState([]);
 
     useEffect(() => {
+        socket.emit("getCount", (response) => {
+            setCurrentCount(response.nbUsers);
+        });
+    }, []);
+    useEffect(() => {
         socket.on("userCount", ({ nbUsers }) => {
             setCurrentCount(nbUsers);
         });

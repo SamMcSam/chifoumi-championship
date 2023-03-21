@@ -17,11 +17,21 @@ const RoomsEntry = ({ id, name, players, state }) => {
         const form = e.target;
         const formData = new FormData(form);
         enterRoom(formData.get("room"));
-        socket.emit("enterRoom", {
-            roomName: formData.get("room"),
-            userName: user,
-        });
-        navigate("/lobby");
+        socket.emit(
+            "enterRoom",
+            {
+                roomName: formData.get("room"),
+                userName: user,
+            },
+            (response) => {
+                if (response.done) {
+                    navigate("/lobby");
+                } else {
+                    // @todo handle error in entering
+                    // print a message and stay here
+                }
+            }
+        );
     }
     return (
         <tr>

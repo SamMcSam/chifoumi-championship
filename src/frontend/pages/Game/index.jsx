@@ -20,16 +20,17 @@ function Game() {
     useUserVerification();
     useLobbyVerification();
 
+    /*
     useEffect(() => {
-        socket.on("listRooms", ({ rooms }) => {
+        socket.emit("getLobby", { roomName: room }, ({ rooms }) => {
             rooms.forEach((element) => {
                 if (element.name === room) {
                     setPageStatus(element.state);
-                    console.log(element.state);
                 }
             });
         });
     }, []);
+    */
 
     return (
         <div>

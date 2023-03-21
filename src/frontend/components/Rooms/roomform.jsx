@@ -19,23 +19,26 @@ const RoomsForm = () => {
         const form = e.target;
         const formData = new FormData(form);
 
-        socket.emit("createRoom", {
-            roomName: formData.get("roomName"),
-            userName: user,
-        });
         setEnabled(false);
         setErrorMessage("");
 
-        socket.on("confirmAction", () => {
-            enterRoom(formData.get("roomName"));
-            navigate("/lobby");
-        });
-
-        socket.on("error", ({ message }) => {
-            console.error(message);
-            setErrorMessage(message);
-            setEnabled(true);
-        });
+        socket.emit(
+            "createRoom",
+            {
+                roomName: formData.get("roomName"),
+                userName: user,
+            },
+            (response) => {
+                if (response.done) {
+                    enterRoom(formData.get("roomName"));
+                    navigate("/lobby");
+                } else {
+                    console.error(response.message);
+                    setErrorMessage(response.message);
+                    setEnabled(true);
+                }
+            }
+        );
     }
 
     return (

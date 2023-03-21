@@ -26,6 +26,7 @@ const {
     getUser,
     getUserByName,
     countUsers,
+    setUserRoom,
 } = require("./user");
 const {
     createLobby,
@@ -38,99 +39,91 @@ const {
     verifyLobbyWinners,
 } = require("./lobby");
 
-const sendReload = (socket, alsoCount = true) => {
-    setTimeout(() => {
-        socket.broadcast.emit("listRooms", {
-            rooms: getLobbies(),
-        });
-
-        if (alsoCount) {
-            socket.broadcast.emit("userCount", {
-                nbUsers: countUsers(),
-            });
-        }
-    }, 200);
-};
-
 io.on("connection", (socket) => {
     // new user
-    socket.on("newUser", ({ name }) => {
+    socket.on("newUser", ({ name }, callback) => {
         const { error, user } = addUser({ id: socket.id, name });
         if (error) {
             console.error(error);
-            socket.emit("error", {
-                message: error,
-            });
+            callback({ done: false, message: error });
             return;
         }
 
         console.log("New user", user);
         socket.user = user;
 
-        socket.emit("confirmAction", {});
+        callback({ done: true, message: "created" });
 
-        // wait a bit
-        sendReload(socket);
+        // send to others
+        socket.broadcast.emit("listRooms", {
+            rooms: getLobbies(),
+        });
+        socket.broadcast.emit("userCount", {
+            nbUsers: countUsers(),
+        });
+    });
+
+    // get count
+    socket.on("getCount", (callback) => {
+        callback({ nbUsers: countUsers() });
     });
 
     // create room
-    socket.on("createRoom", ({ roomName, userName }) => {
+    socket.on("createRoom", ({ roomName, userName }, callback) => {
         const user = getUserByName(userName);
 
-        const { error, lobby } = createLobby({
+        const { error } = createLobby({
             name: roomName,
             admin: user,
         });
 
         if (error) {
             console.error(error);
-            socket.emit("error", {
-                message: error,
-            });
+            callback({ done: false, message: error });
             return;
         }
 
         console.log("New room", roomName);
 
-        user.room = roomName;
+        setUserRoom({ id: user.id, room: roomName });
         socket.user = user;
         console.log("User joined a room", user);
+        callback({ done: true, message: "User joined a room" });
 
-        socket.emit("confirmAction", {});
-
-        // wait a bit
-        sendReload(socket, false);
+        // send to others
+        socket.broadcast.emit("listRooms", {
+            rooms: getLobbies(),
+        });
     });
 
     // enter room
-    socket.on("enterRoom", ({ roomName, userName }) => {
+    socket.on("enterRoom", ({ roomName, userName }, callback) => {
         const user = getUserByName(userName);
 
-        const { error, lobby } = enterRoom({
+        const { error } = enterRoom({
             lobbyName: roomName,
             userName: userName,
         });
 
         if (error) {
             console.error(error);
-            socket.emit("error", {
-                message: error,
-            });
+            callback({ done: false, message: error });
             return;
         }
 
-        user.room = roomName;
+        setUserRoom({ id: user.id, room: roomName });
         socket.user = user;
         console.log("User joined a room", user);
+        callback({ done: true, message: "User joined a room" });
 
-        socket.emit("confirmAction", {});
-
-        // wait a bit
-        sendReload(socket, false);
+        // send to others
+        socket.broadcast.emit("listRooms", {
+            rooms: getLobbies(),
+        });
     });
 
     // ready in lobby
-    socket.on("readyInLobby", ({ roomName, userName }) => {
+    socket.on("readyInLobby", ({ roomName, userName }, callback) => {
         const { error } = playerIsReady({
             lobbyName: roomName,
             userName: userName,
@@ -138,32 +131,57 @@ io.on("connection", (socket) => {
 
         if (error) {
             console.error(error);
-            socket.emit("error", {
-                message: error,
-            });
+            callback({ done: false, message: error });
             return;
         }
 
-        // @todo update only this room, not all broadcast
+        callback({ done: true, message: "User is ready" });
+
+        // @todo update only players in this room, not all broadcast
         socket.broadcast.emit("listRooms", {
             rooms: getLobbies(),
         });
     });
 
     // quit lobby
-    socket.on("quitLobby", ({ roomName, userName }) => {
-        const { lobby } = removeUserFromLobby({
+    socket.on("quitLobby", ({ roomName, userName }, callback) => {
+        const user = getUserByName(userName);
+        if (user) {
+            setUserRoom({ id: user.id });
+        }
+        console.log(`${userName} has quit the room "${roomName}"`, user);
+        const { lobby, error } = removeUserFromLobby({
             userName: userName,
             lobbyName: roomName,
         });
+        if (error) {
+            callback({ done: false, message: error });
+        }
         if (lobby) {
             if (Object.keys(lobby.users).length < 1) {
                 deleteLobby(lobby.name);
             } else if (lobby.admin == userName) {
                 lobby.admin = Object.keys(lobby.users)[0];
             }
+        }
+        callback({ done: true, message: "user quit lobby" });
 
-            sendReload(socket);
+        // update others
+        socket.broadcast.emit("listRooms", {
+            rooms: getLobbies(),
+        });
+    });
+
+    // get Lobby info
+    socket.on("getLobbies", (callback) => {
+        callback({ rooms: getLobbies() });
+    });
+    socket.on("getLobby", ({ roomName }, callback) => {
+        const lobby = getLobby(roomName);
+        if (lobby) {
+            callback({ lobby: lobby });
+        } else {
+            callback({ lobby: null });
         }
     });
 
@@ -175,15 +193,20 @@ io.on("connection", (socket) => {
             lobby.rounds.push({});
             console.log(`⭐ a new round started in ${roomName} room`);
 
-            setTimeout(() => {
-                socket.broadcast.emit("listRooms", {
-                    rooms: getLobbies(),
-                });
-            }, 200);
+            // @todo should send only to concerned players...
+            socket.broadcast.emit("startGame", {
+                roomName: roomName,
+            });
 
             // Countdown until next round
             setTimeout(() => {
                 lobby.state = "results";
+                for (let user in lobby.users) {
+                    // only ready, if null, means they lost before
+                    if (lobby.users[user] === "ready") {
+                        lobby.users[user] = "not-ready";
+                    }
+                }
 
                 // verify who won?
                 verifyLobbyWinners(lobby);
@@ -202,7 +225,7 @@ io.on("connection", (socket) => {
                 console.log(
                     `✉️ results for the latest round in ${roomName} room are in!`
                 );
-            }, 5200);
+            }, 5500);
         }
     });
 
@@ -217,7 +240,6 @@ io.on("connection", (socket) => {
 
     // disconnect
     socket.on("disconnect", function () {
-        console.log("disconnect");
         if (socket.user) {
             console.log("User disconnected", socket.user);
             const user = removeUser(socket.user.id);
@@ -231,17 +253,21 @@ io.on("connection", (socket) => {
                         lobbyName: user.room,
                     });
                     if (lobby) {
-                        console.log(lobby);
                         if (Object.keys(lobby.users).length < 1) {
                             deleteLobby(lobby.name);
                         } else if (lobby.admin == user.name) {
                             lobby.admin = Object.keys(lobby.users)[0];
                         }
-                        socket.broadcast.emit("listRooms", {
-                            rooms: getLobbies(),
-                        });
                     }
                 }
+
+                // update others
+                socket.broadcast.emit("listRooms", {
+                    rooms: getLobbies(),
+                });
+                socket.broadcast.emit("userCount", {
+                    nbUsers: countUsers(),
+                });
             }
         }
     });

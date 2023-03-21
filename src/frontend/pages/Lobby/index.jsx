@@ -12,7 +12,7 @@ const socket = io("http://localhost:5000", { path: "/server" });
 
 function Lobby() {
     const { user } = useContext(UserContext);
-    const { room } = useContext(RoomContext);
+    const { room, enterRoom } = useContext(RoomContext);
 
     const navigate = useNavigate();
 
@@ -20,17 +20,26 @@ function Lobby() {
     useLobbyVerification();
 
     const handleClick = (e) => {
-        socket.emit("quitLobby", { roomName: room, userName: user });
-        navigate("/rooms");
+        e.preventDefault();
+        socket.emit(
+            "quitLobby",
+            { roomName: room, userName: user },
+            (response) => {
+                if (response.done) {
+                    enterRoom("");
+                    navigate("/rooms");
+                } else {
+                    // @todo error handling here?
+                }
+            }
+        );
     };
 
     useEffect(() => {
-        socket.on("listRooms", ({ rooms }) => {
-            rooms.forEach((element) => {
-                if (element.name === room && element.state !== "waiting") {
-                    navigate("/game");
-                }
-            });
+        socket.on("startGame", ({ roomName }) => {
+            if (roomName === room) {
+                navigate("/game");
+            }
         });
     }, []);
 

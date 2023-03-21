@@ -10,6 +10,12 @@ const RoomsList = () => {
     const [isDataLoading, setDataLoading] = useState(true);
 
     useEffect(() => {
+        socket.emit("getLobbies", (response) => {
+            setDataLoading(false);
+            setRoomList(response.rooms);
+        });
+    }, []);
+    useEffect(() => {
         socket.on("listRooms", ({ rooms }) => {
             setDataLoading(false);
             setRoomList(rooms);
@@ -40,7 +46,9 @@ const RoomsList = () => {
                                 />
                             ))
                         ) : (
-                            <tr>No rooms yet</tr>
+                            <tr>
+                                <td colSpan="4">No rooms yet</td>
+                            </tr>
                         )}
                     </tbody>
                 </table>

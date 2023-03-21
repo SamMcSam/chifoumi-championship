@@ -38,7 +38,7 @@ function ResultMove() {
     const [winners, setWinners] = useState([]);
 
     const { user } = useContext(UserContext);
-    const { room } = useContext(RoomContext);
+    const { room, enterRoom } = useContext(RoomContext);
 
     const navigate = useNavigate();
 
@@ -81,7 +81,9 @@ function ResultMove() {
     }, [tableResults]);
 
     const handleClick = (e) => {
+        e.preventDefault();
         socket.emit("quitLobby", { roomName: room, userName: user });
+        enterRoom("");
         navigate("/rooms");
     };
 

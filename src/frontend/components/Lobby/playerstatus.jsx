@@ -14,8 +14,17 @@ const PlayerStatus = () => {
 
     function handleSubmit(e) {
         e.preventDefault();
-        socket.emit("readyInLobby", { roomName: room, userName: user });
-        setOkStatus(true);
+        socket.emit(
+            "readyInLobby",
+            { roomName: room, userName: user },
+            (response) => {
+                if (response.done) {
+                    setOkStatus(true);
+                } else {
+                    // @todo error handling here?
+                }
+            }
+        );
     }
 
     return okStatus ? (

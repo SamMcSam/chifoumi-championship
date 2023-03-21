@@ -17,17 +17,17 @@ const SignupForm = () => {
         const formData = new FormData(form);
         saveName(formData.get("name"));
 
-        socket.emit("newUser", { name: formData.get("name") });
         setEnabled(false);
         setErrorMessage("");
 
-        socket.on("confirmAction", () => {
-            navigate("/rooms");
-        });
-        socket.on("error", ({ message }) => {
-            console.error(message);
-            setErrorMessage(message);
-            setEnabled(true);
+        socket.emit("newUser", { name: formData.get("name") }, (response) => {
+            if (response.done) {
+                navigate("/rooms");
+            } else {
+                console.error(response.message);
+                setErrorMessage(response.message);
+                setEnabled(true);
+            }
         });
     }
 
